@@ -352,7 +352,7 @@ def main(wf):
             'done', 'error', 'removed', 'stopped']
     actions = ['reveal', 'rm', 'url', 'pause', 'resume']
     settings = ['rpc', 'secret', 'limit', 'limitup', 'limitnum', 'clear', 'add', 'quit',
-            'stat', 'help', 'pauseall', 'resumeall']
+            'stat', 'help', 'pauseall', 'resumeall', 'bili']
     commands = actions + settings
 
     command = 'reveal'
@@ -395,6 +395,8 @@ def main(wf):
                 arg=u'--secret-setting ' + param, valid=True)
         elif command == 'add':
             wf.add_item('Add new download: ' + param, arg='--add ' + param, valid=True)
+        elif command == 'bili':
+            wf.add_item('BilibiliJJ download, please input AV number: ' + param, arg='--bili ' + param, valid=True)
         elif command == 'clear':
             wf.add_item('Clear all stopped download?', arg='--clear', valid=True)
         elif command == 'pauseall':

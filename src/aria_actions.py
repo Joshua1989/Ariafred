@@ -4,7 +4,7 @@ import os
 import sys
 import xmlrpclib
 from workflow import Workflow
-
+import requests, re
 
 def escape(s, char=' '):
     return s.replace(char, '\\' + char)
@@ -215,6 +215,47 @@ def get_help():
     os_command = 'open https://github.com/Wildog/Ariafred'
     os.system(os_command)
 
+def add_task_bili(av_num):
+    def get_download_info(av_num):
+        av_num = re.sub('av','',av_num)
+        # Get HTML source code for given AV_number in BilibiliJJ
+        head = 'http://www.bilibilijj.com'
+        data = requests.get(head+'/video/av'+av_num+'/').text
+        # Get title of the given AV_number
+        title = re.search(re.compile(ur'<title>(.*?)下载\(AV\d+\)-哔哩哔哩唧唧-bilibili视频\|弹幕在线下载</title>',re.UNICODE),data).group(1)
+        # Get p_number, Cid, barrage URL and subname for all videos
+        pattern = re.compile(ur"<span class='Width-2 Box PBox' data-cid='(\d\d+)' data-p='(\d+)'>[\s\S]*?<span class='PBoxName_F'>(.*?)</span>",re.UNICODE)
+        info_list = [{'no.':info[1], 'cid':info[0], 'subname':info[2]} 
+                     for info in re.findall(pattern,data)]
+        # For each video, get its MP4 download link
+        def get_mp4_url(cid):
+            # Get HTML source code for given Cid in BilibiliJJ/FreeDown
+            data = requests.get('http://www.bilibilijj.com/FreeDown/'+cid+'.php').text
+            # Get MP4 URL
+            pattern = re.compile(ur'''迅雷下载[\s\S]*?href="([\s\S]*?)"[\s\S]*?普通下载''',re.UNICODE)
+            return re.search(pattern,data).group(1)
+        for i,info in enumerate(info_list,1):
+            info['mp4_url'] = head+get_mp4_url(info['cid'])
+            info['barrage_url'] = "http://comment.bilibili.com/"+info['cid']+".xml"
+        return title, info_list
+    # Get necessary information from given AV number
+    title, info_list = get_download_info(av_num)
+    bili_root_dir = '/Users/JoshuaLian/Movies/Bilibili'
+    # If valid URLs are found, download by aria2c
+    if len(info_list) > 0:
+        # If there is only one video, change its subname to title 
+        if len(info_list) == 1:
+            info_list[0]['subname'] = title
+        for info in info_list:
+            # Download MP4
+            aria_opt = dict(dir=bili_root_dir, out=u'{0}/{1}.mp4'.format(title,info['subname']))
+            gid = server.addUri(secret, [info['mp4_url']], aria_opt)
+            notify(title=info['subname']+'.mp4 added:', msg=info['mp4_url'], gid=gid)
+            # Download barrage
+            barrage_content = requests.get(info['barrage_url']).text
+            barrage_file = open(bili_root_dir+u'/{0}/{1}.xml'.format(title,info['subname']), 'w')
+            barrage_file.write(barrage_content)
+            barrage_file.close()
 
 def main(wf):
     command = wf.args[0]
@@ -271,9 +312,14 @@ def main(wf):
         set_query('aria limit ')
     elif command == '--go-upload-limit-setting':
         set_query('aria limitup ')
+    elif command == '--bili':
+        add_task_bili(wf.args[1])
 
 
 if __name__ == '__main__':
+
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
 
     wf = Workflow()
     rpc_path = wf.settings['rpc_path']
