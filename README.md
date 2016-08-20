@@ -1,3 +1,12 @@
+#What's new from my effort:
+Add an extra action to download Bilibili video (in MP4) and barrage file (in XML).
+Just type `bili` plus the AV number of the video, i.e. `bili av10492` or `bili 10492`
+
+The default download directory for `bili` action is `/Users/JoshuaLian/Movies/Bilibili`, definitely this is not a valid directory for you.
+To set the default download directory, search for `bili_root_dir` in `aria_actions.py`.
+
+Notice: the downloading URL for the videos are extracted from BilibiliJJ, if there is no MP4 video available (sometimes only FLV format video is available), the `bili` action will do nothing.
+
 #Ariafred
 
 ![screenshot](https://github.com/Wildog/Ariafred/raw/master/screenshots/ariafred.gif)
