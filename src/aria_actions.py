@@ -223,6 +223,7 @@ def add_task_bili(av_num):
         data = requests.get(head+'/video/av'+av_num+'/').text
         # Get title of the given AV_number
         title = re.search(re.compile(ur'<title>(.*?)下载\(AV\d+\)-哔哩哔哩唧唧-bilibili视频\|弹幕在线下载</title>',re.UNICODE),data).group(1)
+        title = re.sub('/', ' ', title)
         # Get p_number, Cid, barrage URL and subname for all videos
         pattern = re.compile(ur"<span class='Width-2 Box PBox' data-cid='(\d\d+)' data-p='(\d+)'>[\s\S]*?<span class='PBoxName_F'>(.*?)</span>",re.UNICODE)
         info_list = [{'no.':info[1], 'cid':info[0], 'subname':info[2]} 
@@ -247,15 +248,20 @@ def add_task_bili(av_num):
         if len(info_list) == 1:
             info_list[0]['subname'] = title
         for info in info_list:
-            # Download MP4
-            aria_opt = dict(dir=bili_root_dir, out=u'{0}/{1}.mp4'.format(title,info['subname']))
-            gid = server.addUri(secret, [info['mp4_url']], aria_opt)
-            notify(title=info['subname']+'.mp4 added:', msg=info['mp4_url'], gid=gid)
-            # Download barrage
+            # Create folder
+            directory = bili_root_dir+'/'+title
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            # Download XML barrage
             barrage_content = requests.get(info['barrage_url']).text
             barrage_file = open(bili_root_dir+u'/{0}/{1}.xml'.format(title,info['subname']), 'w')
             barrage_file.write(barrage_content)
             barrage_file.close()
+            # Download MP4
+            aria_opt = dict(dir=bili_root_dir, out=u'{0}/{1}.mp4'.format(title,info['subname']))
+            gid = server.addUri(secret, [info['mp4_url']], aria_opt)
+            notify(title=info['subname']+'.mp4 added:', msg=info['mp4_url'], gid=gid)
+            
 
 def play_bili(gid):
     dir = server.tellStatus(secret, gid, ['dir'])['dir']
