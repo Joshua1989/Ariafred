@@ -257,6 +257,15 @@ def add_task_bili(av_num):
             barrage_file.write(barrage_content)
             barrage_file.close()
 
+def play_bili(gid):
+    dir = server.tellStatus(secret, gid, ['dir'])['dir']
+    filepath = server.getFiles(secret, gid)[0]['path'].encode('utf-8')
+    if os.path.exists(filepath):
+        os_command = 'open -a Bilibili "%s"' % filepath
+    else:
+        os_command = 'open "%s" ' % dir
+    os.system(os_command)
+
 def main(wf):
     command = wf.args[0]
 
@@ -314,6 +323,8 @@ def main(wf):
         set_query('aria limitup ')
     elif command == '--bili':
         add_task_bili(wf.args[1])
+    elif command == '--play-bili':
+        play_bili(wf.args[1])
 
 
 if __name__ == '__main__':

@@ -95,11 +95,12 @@ def no_result_notify(status, filters):
 def get_modifier_subs(active=False, done=False, info=''):
     subs = {'cmd': 'Resume download',
             'shift': 'Copy URL',
-            'alt': 'Remove download'}
-    if active:
-        subs['cmd'] = 'Pause download'
-    if done:
-        subs['cmd'] = info
+            'alt': 'Remove download',
+            'cmd': 'Play by Bilibili for Mac'}
+    # if active:
+    #     subs['cmd'] = 'Pause download'
+    # if done:
+    #     subs['cmd'] = info
     return subs
 
 
