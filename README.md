@@ -1,5 +1,6 @@
 # What's new from my effort:
-* Type `magnet` plus the magnet index (for example `e510b5da0475fdc7fe707a6a322bda77ac0f09d1`) then press `Enter`. 
+* To download magnet link direct from the magnet index, type `magnet` plus the magnet index (for example `e510b5da0475fdc7fe707a6a322bda77ac0f09d1`) then press `Enter`. 
+* To update best bt trackers from [this tracker list](https://github.com/ngosang/trackerslist), type `tracker` then press `Enter`. 
 * When the BT task contains only one file, show the file name instead of the directory base name.
 
 
