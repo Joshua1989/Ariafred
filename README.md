@@ -1,13 +1,7 @@
 #What's new from my effort:
-Add an extra action to download Bilibili video (in MP4) and barrage file (in XML).
-Just type `bili` plus the AV number of the video, i.e. `bili av10492` or `bili 10492`
+* New action `magnet` to automatically add a magnet download task given only the magnet index such as `e510b5da0475fdc7fe707a6a322bda77ac0f09d1`
+* When the BT task contains only one file, show the file name instead of the directory base name.
 
-The default download directory for `bili` action is `/Users/JoshuaLian/Movies/Bilibili`, definitely this is not a valid directory for you.
-To set the default download directory, search for `bili_root_dir` in `aria_actions.py`.
-
-Notice: the downloading URL for the videos are extracted from BilibiliJJ, if there is no MP4 video available (sometimes only FLV format video is available), the `bili` action will do nothing.
-
-If you have Bilibili for Mac on your laptop, to play a downloaded video, just press `cmd+enter`
 
 #Ariafred
 
