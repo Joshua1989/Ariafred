@@ -3,8 +3,8 @@ from __future__ import print_function
 import os
 import sys
 import xmlrpclib
-from workflow import Workflow
-import requests, re
+from workflow import Workflow3, web
+
 
 def escape(s, char=' '):
     return s.replace(char, '\\' + char)
@@ -148,6 +148,7 @@ def quit_aria():
     notify('Aria2 shutting down')
     kill_notifier()
 
+
 def speed_convert(s):
     try:
         speed = int(s)
@@ -184,11 +185,13 @@ def speed_convert(s):
         else:
             return ('0', '0 Byte')
 
+
 def limit_speed(type, speed):
     option = 'max-overall-' + type + '-limit'
-    speed_value,speed_string = speed_convert(speed)
+    speed_value, speed_string = speed_convert(speed)
     server.changeGlobalOption(secret, {option: speed_value})
     notify('Limit ' + type + ' speed to: ' + speed_string)
+
 
 def limit_num(num):
     server.changeGlobalOption(secret, {'max-concurrent-downloads': num})
@@ -201,76 +204,41 @@ def kill_notifier():
     os_command = 'pkill -TERM -P ' + pid
     os.system(os_command)
 
+
 def set_rpc(path):
     wf.settings['rpc_path'] = path
     notify('Set RPC path to: ' + path)
     kill_notifier()
+
 
 def set_secret(str):
     wf.settings['secret'] = str
     notify('Set RPC secret to: ' + str)
     kill_notifier()
 
+
 def get_help():
     os_command = 'open https://github.com/Wildog/Ariafred'
     os.system(os_command)
 
-def add_task_bili(av_num):
-    def get_download_info(av_num):
-        av_num = re.sub('av','',av_num)
-        # Get HTML source code for given AV_number in BilibiliJJ
-        head = 'http://www.bilibilijj.com'
-        data = requests.get(head+'/video/av'+av_num+'/').text
-        # Get title of the given AV_number
-        title = re.search(re.compile(ur'<title>(.*?)下载\(AV\d+\)-哔哩哔哩唧唧-bilibili视频\|弹幕在线下载</title>',re.UNICODE),data).group(1)
-        title = re.sub('/', ' ', title)
-        # Get p_number, Cid, barrage URL and subname for all videos
-        pattern = re.compile(ur"<span class='Width-2 Box PBox' data-cid='(\d\d+)' data-p='(\d+)'>[\s\S]*?<span class='PBoxName_F'>(.*?)</span>",re.UNICODE)
-        info_list = [{'no.':info[1], 'cid':info[0], 'subname':info[2]} 
-                     for info in re.findall(pattern,data)]
-        # For each video, get its MP4 download link
-        def get_mp4_url(cid):
-            # Get HTML source code for given Cid in BilibiliJJ/FreeDown
-            data = requests.get('http://www.bilibilijj.com/FreeDown/'+cid+'.php').text
-            # Get MP4 URL
-            pattern = re.compile(ur'''迅雷下载[\s\S]*?href="([\s\S]*?)"[\s\S]*?普通下载''',re.UNICODE)
-            return re.search(pattern,data).group(1)
-        for i,info in enumerate(info_list,1):
-            info['mp4_url'] = head+get_mp4_url(info['cid'])
-            info['barrage_url'] = "http://comment.bilibili.com/"+info['cid']+".xml"
-        return title, info_list
-    # Get necessary information from given AV number
-    title, info_list = get_download_info(av_num)
-    bili_root_dir = '/Users/JoshuaLian/Movies/Bilibili'
-    # If valid URLs are found, download by aria2c
-    if len(info_list) > 0:
-        # If there is only one video, change its subname to title 
-        if len(info_list) == 1:
-            info_list[0]['subname'] = title
-        for info in info_list:
-            # Create folder
-            directory = bili_root_dir+'/'+title
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            # Download XML barrage
-            barrage_content = requests.get(info['barrage_url']).text
-            barrage_file = open(bili_root_dir+u'/{0}/{1}.xml'.format(title,info['subname']), 'w')
-            barrage_file.write(barrage_content)
-            barrage_file.close()
-            # Download MP4
-            aria_opt = dict(dir=bili_root_dir, out=u'{0}/{1}.mp4'.format(title,info['subname']))
-            gid = server.addUri(secret, [info['mp4_url']], aria_opt)
-            notify(title=info['subname']+'.mp4 added:', msg=info['mp4_url'], gid=gid)
-            
 
-def play_bili(gid):
-    dir = server.tellStatus(secret, gid, ['dir'])['dir']
-    filepath = server.getFiles(secret, gid)[0]['path'].encode('utf-8')
-    if os.path.exists(filepath):
-        os_command = 'open -a Bilibili "%s"' % filepath
-    else:
-        os_command = 'open "%s" ' % dir
-    os.system(os_command)
+def add_task_magnet(url):
+    gid = server.addUri(secret, ['magnet:?xt=urn:btih:' + url])
+    notify(title='Download added:', msg='magnet:?xt=urn:btih:' + url, gid=gid)
+
+
+def update_bt_tracker():
+    conf_path = server.getGlobalOption()['conf-path']
+    os.system('cp {} {}'.format(conf_path, conf_path + '.old'))
+    url = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt'
+    trackers = ','.join(web.get(url).content.strip().split('\n\n'))
+    lines = open(conf_path, 'r').readlines()
+    for i, line in enumerate(lines):
+        if 'bt-tracker=' in line:
+            lines[i] = 'bt-tracker=' + trackers + '\n'
+    with open(conf_path, 'w') as fp:
+        fp.write(''.join(lines))
+
 
 def main(wf):
     command = wf.args[0]
@@ -285,9 +253,7 @@ def main(wf):
         add_task(wf.args[1])
     elif command == '--bt':
         add_bt_task(wf.args[1])
-    elif (command == '--pause'
-        or command == '--resume'
-        or command == '--switch'):
+    elif command in ['--pause', '--resume', '--switch']:
         switch_task(wf.args[1])
     elif command == '--pauseall':
         pause_all()
@@ -327,18 +293,15 @@ def main(wf):
         set_query('aria limit ')
     elif command == '--go-upload-limit-setting':
         set_query('aria limitup ')
-    elif command == '--bili':
-        add_task_bili(wf.args[1])
-    elif command == '--play-bili':
-        play_bili(wf.args[1])
+    elif command == '--magnet':
+        add_task_magnet(wf.args[1])
+    elif command == '--tracker':
+        update_bt_tracker()
 
 
 if __name__ == '__main__':
 
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
-
-    wf = Workflow()
+    wf = Workflow3()
     rpc_path = wf.settings['rpc_path']
     server = xmlrpclib.ServerProxy(rpc_path).aria2
     secret = 'token:' + wf.settings['secret']
